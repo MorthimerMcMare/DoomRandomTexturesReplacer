@@ -1,0 +1,48 @@
+//
+
+class RTRTestHandler: RandomTexturesReplacerHandler_BaseLevelWide {
+
+	void InitUserWallTextures( void ) {
+		SetReplaceableTextures( "SFALL1,SFALL2,SFALL3,SFALL4" );
+		ReplaceTo( "MARBLE1,MARBLE2" );
+		ReplaceTo( "BFALL1", 63 );
+
+		SetReplaceableTextures( "PIPE2,PIPE4" );
+		ReplaceTo( "PIPE2,PIPE4" );
+
+		SetReplaceableTextures( "TEKGREN2,TEKGREN5" );
+		ReplaceTo( "SFALL1,SFALL2,SFALL3,SFALL4", 9 );
+		ReplaceTo( "BFALL1", 9 );
+
+		/*SetReplaceableTextures( "TEKGREN2,TEKGREN5" );
+		ReplaceTo( "TEKGREN2,TEKGREN5", 127 );
+		ReplaceTo( "SHAWN2", 31 );*/
+
+		//SetReplaceableTextures( "TEKGREN1,TEKGREN3,TEKGREN4" );
+		//ReplaceTo( "TEKGREN1,TEKGREN3,TEKGREN4,TEKGREN5,PIPES", 127 );
+
+		//SetReplaceableTextures( "TEKGREN2,TEKGREN5" );
+		//ReplaceTo( "TEKGREN2,TEKGREN5,SHAWN2", 127 );
+	}
+
+
+	void InitUserFlatTextures( void ) {
+		SetReplaceableTextures( "FLOOR4_1,FLOOR0_1,GRNLITE1" );
+		ReplaceTo( "FLAT5_2,FWATER1" );
+	}
+
+
+	override void SetupCategories() {
+		int wallsCategoryIndex = AddLevelWideCategory( TexMan.Type_Wall ); // Actually "0".
+		int flatsCategoryIndex = AddLevelWideCategory( TexMan.Type_Flat ); // Actually "1".
+
+		// Initialization of the walls:
+		SelectCategory( wallsCategoryIndex );
+		InitUserWallTextures();
+
+		// Initialization of the floors/ceilings:
+		SelectCategory( flatsCategoryIndex );
+		InitUserFlatTextures();
+	}
+
+} // of class RTRTestHandler: RandomTexturesReplacerHandler_BaseLevelWide {}

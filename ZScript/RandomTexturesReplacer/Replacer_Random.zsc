@@ -1,0 +1,86 @@
+//
+// Replaces every rule-fitting texture without grouping etc.
+//
+
+class RandomTexturesReplacerHandler_BaseRandom: RandomTexturesReplacerBaseHandler {
+
+	protected void ReplaceAllWalls( RandomTexturesReplacerCategory texcategory ) {
+		for ( int curSideIndex = 0; curSideIndex < level.Sides.Size(); curSideIndex++ ) {
+			Side curside = level.Sides[ curSideIndex ];
+
+			// Top/middle/bottom texture on line cycle:
+			for ( int curSidePos = Side.top; curSidePos <= Side.bottom; curSidePos++ ) {
+				TextureID curtex = curside.GetTexture( curSidePos );
+
+				if ( !curtex )
+					continue;
+
+
+				TextureID newtex = texcategory.GetReplacingTexture( curtex );
+
+				if ( newtex != texcategory.const_NullTexture && newtex != curtex ) {
+					//console.printf( "Replaced \"%s\" to \"%s\" at line %i.",
+					//	TexMan.GetName( curtex ), TexMan.GetName( newtex ), curside.linedef.Index() );
+
+					curside.SetTexture( curSidePos, newtex );
+				}
+			}
+
+		} // of for ( int curSideIndex = 0; curSideIndex < level.Sides.Size(); curSideIndex++ ) {}
+
+	} // of protected void ReplaceAllWalls( RandomTexturesReplacerCategory texcategory ) {}
+
+
+	// Replaces only floors if "Sector.floor" is provided (see
+	//"Sector.EPlane"), only ceilings if "Sector.ceiling", 
+	//and all flats in any other case.
+
+	protected void ReplaceAllFlats( RandomTexturesReplacerCategory texcategory, int planes = -1 ) {
+		bool firstPlaneEnum = ( planes != Sector.ceiling? Sector.floor : Sector.ceiling );
+		bool lastPlaneEnum = ( planes != Sector.floor? Sector.ceiling : Sector.floor );
+
+		for ( int i = 0; i < level.Sectors.Size(); i++ ) {
+			Sector s = level.Sectors[ i ];
+
+			// Floor and ceiling:
+			for ( int curFlatPos = firstPlaneEnum; curFlatPos <= lastPlaneEnum; curFlatPos++ ) {
+				TextureID curtex = s.GetTexture( curFlatPos );
+
+				if ( !curtex )
+					continue;
+
+				TextureID newtex = texcategory.GetReplacingTexture( curtex );
+
+				if ( newtex != texcategory.const_NullTexture && newtex != curtex ) {
+					//console.printf( "Replaced \"%s\" to \"%s\" at sector %i (flat %i).",
+					//	TexMan.GetName( curtex ), TexMan.GetName( newtex ), s.Index(), curFlatPos );
+
+					s.SetTexture( curFlatPos, newtex );
+				}
+			}
+		} // of for ( int i = 0; i < level.Sectors.Size(); i++ ) {}
+
+	} // of protected void ReplaceAllFlats( RandomTexturesReplacerCategory texcategory, int planes = -1 ) {}
+
+
+	override void HandleWorldInit( WorldEvent e ) {
+		for ( int i = 0; i < categories.Size(); i++ ) {
+			RandomTexturesReplacerCategory curcategory = categories[ i ];
+			//texcategory.ResetTextures();
+
+			switch ( curcategory.GetTexmanTexturesType() ) {
+				case TexMan.Type_Wall:
+					ReplaceAllWalls( curcategory );
+					break;
+
+				case TexMan.Type_Flat:
+					ReplaceAllFlats( curcategory );
+					break;
+
+				default:
+					break;
+			}
+		}
+	} // of override void HandleWorldInit( WorldEvent e ) {}
+
+} // of class RandomTexturesReplacerHandler_BaseRandom: RandomTexturesReplacerBaseHandler {}

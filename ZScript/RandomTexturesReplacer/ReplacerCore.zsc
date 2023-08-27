@@ -1,0 +1,310 @@
+//
+
+const const_RandomTexturesReplacerHandlerOrder = 0x7FAA0101;
+
+
+
+// Replace categories and tables classes:
+
+class RandomTexturesReplacerReplaceTable {
+	protected Array<TextureID> textures;
+	protected Array<double> chances;
+	protected double totalChance;
+
+	/* readonly */ protected TextureID const_NullTexture;
+
+	virtual void Init( void ) {}
+
+
+	static RandomTexturesReplacerReplaceTable Create( class<RandomTexturesReplacerReplaceTable> initClass ) {
+		if ( !initClass )
+			initClass = 'RandomTexturesReplacerReplaceTable';
+
+		RandomTexturesReplacerReplaceTable newdata = RandomTexturesReplacerReplaceTable( new( initClass ) );
+
+		newdata.const_NullTexture = RandomTexturesReplacerCategory.GetNullTexture();
+		newdata.totalChance = 0.0;
+		newdata.Init();
+
+		return newdata;
+	}
+
+	void Add( TextureID newtex, double newchance ) {
+		textures.Push( int( newtex ) );
+		chances.Push( max( newchance, 0.0 ) );
+		totalChance += newchance;
+	}
+
+	void Remove( uint index ) {
+		if ( index > textures.Size() )
+			return;
+
+		textures.Delete( index );
+		chances.Delete( index );
+	}
+
+	void Clear( void ) {
+		textures.Clear();
+		chances.Clear();
+	}
+
+
+	protected TextureID tableRandomTexture( void ) {
+		int texturesSize = textures.Size();
+		double curChance = FRandom( 0.0, totalChance );
+		int curTextureIndex = 0;
+
+		for ( ; curTextureIndex < texturesSize; curTextureIndex++ ) {
+			curChance -= chances[ curTextureIndex ];
+
+			if ( curChance <= double.epsilon )
+				break;
+		}
+
+		if ( curTextureIndex == texturesSize )
+			return const_NullTexture; // Seems to be an impossible case, actually.
+
+		return textures[ curTextureIndex ];
+	}
+
+
+	virtual TextureID GetReplacingTexture( void ) {
+		return tableRandomTexture();
+	}
+
+} // of class RandomTexturesReplacerReplaceTable {}
+
+
+class RandomTexturesReplacerCategory {
+	private RandomTexturesReplacerHashTable source;
+	private Array<RandomTexturesReplacerReplaceTable> dest;
+	private class<RandomTexturesReplacerReplaceTable> destdataClass;
+	private RandomTexturesReplacerHashNode cachedNode;
+
+	/* readonly */ TextureID const_NullTexture;
+
+	private int texmanTexturesType;
+	private int texmanTexturesFlags;
+
+
+	static TextureID GetNullTexture( void ) {
+		return TexMan.CheckForTexture( "", TexMan.Type_Null );
+	}
+
+	static RandomTexturesReplacerCategory Create( class<RandomTexturesReplacerReplaceTable> initDestClass, int initTexmanTexturesType = -1, int initTexmanTexturesFlags = -1 ) {
+		if ( initTexmanTexturesType < 0 )
+			initTexmanTexturesType = TexMan.Type_Any;
+
+		if ( initTexmanTexturesFlags < 0 )
+			initTexmanTexturesFlags = TexMan.TryAny;
+
+		let newcategory = new( "RandomTexturesReplacerCategory" );
+
+
+		if ( !initDestClass ) {
+			initDestClass = 'RandomTexturesReplacerReplaceTable';
+
+			console.printf( "%s::Create(). Destination data class is not inherited from the \"%s\". Set to base.",
+					newcategory.GetClassName(),
+					initDestClass.GetClassName() );
+		}
+
+		newcategory.texmanTexturesType = initTexmanTexturesType;
+		newcategory.texmanTexturesFlags = initTexmanTexturesFlags;
+		newcategory.source = RandomTexturesReplacerHashTable.Create( initTexmanTexturesType );
+		newcategory.destdataClass = initDestClass;
+
+		newcategory.const_NullTexture = GetNullTexture();
+		newcategory.cachedNode = NULL;
+
+		return newcategory;
+	}
+
+
+	int GetTexmanTexturesType( void ) const {
+		return texmanTexturesType;
+	}
+
+	RandomTexturesReplacerHashTable GetSource( void ) const {
+		return source;
+	}
+
+	int GetDestTableSize( void ) const {
+		return dest.Size();
+	}
+
+	RandomTexturesReplacerReplaceTable GetDest( uint index ) const {
+		if ( index > dest.Size() )
+			return NULL;
+
+		return dest[ index ];
+	}
+
+
+	void AddSourceData( String texname, double chance, int newdestindex ) {
+		TextureID texid = TexMan.CheckForTexture( texname, texmanTexturesType );
+
+		if ( texid != const_NullTexture ) {
+			RandomTexturesReplacerHashNode node = source.Add( texid, chance );
+
+			if ( node.destindex ) {
+				console.printf( "%s::AddSourceData(). Redefinition of the dest replacing index (%i -> %i) for texture \"%s\".", 
+						GetClassName(), node.destindex, newdestindex, texname );
+			}
+
+			node.destindex = newdestindex;
+
+		} else {
+			console.printf( "%s::AddSourceData(). No texture \"%s\" found.",
+					GetClassName(), texname );
+		}
+	} // of void AddSourceData( String texname, int newdestindex ) {}
+
+
+	void NewReplaceData( void ) {
+		dest.Push( RandomTexturesReplacerReplaceTable.Create( destdataClass ) );
+	}
+
+	void AddReplaceData( String texname, double chance ) {
+		TextureID texid = TexMan.CheckForTexture( texname, texmanTexturesType );
+
+		if ( texid )
+			dest[ dest.Size() - 1 ].Add( texid, chance );
+		else
+			console.printf( GetClassName() .. "::AddReplaceData(). No texture \"%s\" found.", texname );
+	}
+
+
+	TextureID GetReplacingTexture( TextureID texid ) {
+		RandomTexturesReplacerHashNode node = cachedNode;
+
+		// Try to use cached texture on previous iteration:
+		if ( !cachedNode || ( cachedNode.texid != texid ) )
+			node = source.FindTextureByID( texid );
+
+		// Get new texture if random is successful:
+		if ( node && FRandom( 0.0, 1.0 ) <= node.replacechance )
+			return dest[ node.destindex ].GetReplacingTexture();
+
+		return const_NullTexture;
+	}
+} // of class RandomTexturesReplacerCategory {}
+
+
+
+class RandomTexturesReplacerBaseHandler: StaticEventHandler abstract {
+	const const_ReplaceableTexturesArrListSeparator = ",";
+
+	enum ETexturesReplaceInitStatus {
+		TRIS_None = 0,
+		TRIS_AddSource,
+		TRIS_AddDest
+	};
+
+
+	protected Array<RandomTexturesReplacerCategory> categories;
+
+
+	// Initialization variables:
+	protected ETexturesReplaceInitStatus curInitStatus;
+	protected int curInitCategory;
+
+	protected int nextDestIndex;
+
+
+	protected void SelectCategory( uint nextcategory ) {
+		nextDestIndex = 0;
+		curInitStatus = TRIS_None;
+		curInitCategory = nextcategory;
+	}
+
+	protected void FinishReplaceGroup( void ) {
+		nextDestIndex++;
+	}
+
+	protected void SetReplaceableTextures( String texlist, double chance = 1.0 ) {
+		if ( curInitStatus == TRIS_AddDest ) {
+			FinishReplaceGroup();
+			curInitStatus = TRIS_AddSource;
+
+		} else if ( curInitStatus == TRIS_None ) {
+			curInitStatus = TRIS_AddSource;
+		}
+
+		Array<String> texlistSplitted;
+		texlistSplitted.Clear();
+		texlist.Split( texlistSplitted, const_ReplaceableTexturesArrListSeparator );
+
+		RandomTexturesReplacerCategory texcategory = categories[ curInitCategory ];
+		chance = clamp( chance, 0.0, 1.0 );
+
+		for ( int i = 0; i < texlistSplitted.Size(); i++ )
+			texcategory.AddSourceData( texlistSplitted[ i ], chance, nextDestIndex );
+	} // of protected void SetReplaceableTextures( String texlist, double chance = 255.0 ) {}
+
+	protected void ReplaceTo( String texlist, double relativechance = 1.0 ) {
+		RandomTexturesReplacerCategory texcategory = categories[ curInitCategory ];
+
+		if ( curInitStatus == TRIS_AddSource ) {
+			texcategory.NewReplaceData();
+			curInitStatus = TRIS_AddDest;
+
+		} else if ( curInitStatus == TRIS_None ) {
+			console.printf( GetClassName() .. "::ReplaceTo(). Textures to replace not set yet." );
+			return;
+		}
+
+
+		Array<String> texlistSplitted;
+		texlistSplitted.Clear();
+		texlist.Split( texlistSplitted, const_ReplaceableTexturesArrListSeparator );
+
+		relativechance = max( 0.0, relativechance );
+
+		for ( int i = 0; i < texlistSplitted.Size(); i++ )
+			texcategory.AddReplaceData( texlistSplitted[ i ], relativechance );
+	} // of protected void ReplaceTo( String texlist, double relativechance = 255.0 ) {}
+
+
+	void ResetCategories( void ) {
+		categories.Clear();
+		SetupCategories();
+	}
+
+
+
+	protected uint AddCategory( int texmanType = -1, int texmanFlags = -1, class<Object> replaceTableClass = NULL ) {
+		if ( replaceTableClass == NULL )
+			replaceTableClass = 'RandomTexturesReplacerReplaceTable';
+
+		categories.Push( RandomTexturesReplacerCategory.Create( (class<RandomTexturesReplacerReplaceTable>)(replaceTableClass), texmanType, texmanFlags ) );
+
+		int newCategoryPosition = categories.Size();
+		SelectCategory( newCategoryPosition );
+
+		return uint( newCategoryPosition ) - 1;
+	}
+
+	protected virtual void SetupCategories( void ) {}
+
+	protected virtual void HandleWorldInit( WorldEvent e ) {}
+
+
+
+	override void OnRegister() {
+		SetOrder( const_RandomTexturesReplacerHandlerOrder );
+		ResetCategories();
+
+		Super.OnRegister();
+	}
+
+	override void WorldLoaded( WorldEvent e ) {
+		if ( e.IsSaveGame || e.IsReopen )
+			return;
+
+		HandleWorldInit( e );
+
+		Super.WorldLoaded( e );
+	} // of override void WorldLoaded( WorldEvent e ) {}
+
+} // of class RandomTexturesReplacerBaseHandler: StaticEventHandler abstract {}

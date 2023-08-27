@@ -1,0 +1,103 @@
+//
+
+class RandomTexturesReplacerHashNode {
+	String texname;
+	TextureID texid;
+
+	double replacechance; // Normalized: from 0.0 to 1.0.
+	int destindex;
+
+	static RandomTexturesReplacerHashNode Create( TextureID texid, double chance ) {
+		RandomTexturesReplacerHashNode newnode = new( "RandomTexturesReplacerHashNode" );
+
+		newnode.texid = texid;
+		newnode.texname = TexMan.GetName( texid ); // "TexMan.GetName()" is awfully fast...
+		newnode.replacechance = chance;
+
+		return newnode;
+	}
+} // of class RandomTexturesReplacerHashNode {}
+
+class RandomTexturesReplacerHashTableCell {
+	Array<RandomTexturesReplacerHashNode> nodes;
+
+	static RandomTexturesReplacerHashTableCell Create( void ) {
+		return new( "RandomTexturesReplacerHashTableCell" );
+	}
+
+	RandomTexturesReplacerHashNode FindTextureByID( TextureID texid ) {
+		for ( int i = 0; i < nodes.Size(); i++ ) {
+			if ( nodes[ i ].texid == texid )
+				return nodes[ i ];
+		}
+
+		return NULL;
+	}
+
+	/*RandomTexturesReplacerHashNode FindTextureByName( String texname ) {
+		for ( int i = 0; i < nodes.Size(); i++ ) {
+			if ( nodes[ i ].texname == texname )
+				return nodes[ i ];
+		}
+
+		return NULL;
+	}*/
+
+	RandomTexturesReplacerHashNode AddNode( TextureID texid, double chance ) {
+		RandomTexturesReplacerHashNode newnode = FindTextureByID( texid );
+
+		if ( !newnode )
+			newnode = RandomTexturesReplacerHashNode.Create( texid, chance );
+
+		nodes.Push( newnode );
+		return newnode;
+	}
+} // of class RandomTexturesReplacerHashTableCell {}
+
+class RandomTexturesReplacerHashTable {
+	const const_HashTableSize = 256;
+
+	RandomTexturesReplacerHashTableCell hashtable[ const_HashTableSize ];
+	RandomTexturesReplacerHashNode cachedLastNode;
+
+	int texmanTexturesType;
+
+
+	static RandomTexturesReplacerHashTable Create( int initTexmanTexturesType ) {
+		RandomTexturesReplacerHashTable newtable = new( "RandomTexturesReplacerHashTable" );
+		newtable.texmanTexturesType = initTexmanTexturesType;
+
+		// Creating empty hash table cells:
+		for ( int i = 0; i < const_HashTableSize; i++ )
+			newtable.hashtable[ i ] = RandomTexturesReplacerHashTableCell.Create();
+
+		return newtable;
+	}
+
+	static uint getHashID( TextureID texid ) {
+		int hashcellid = int( texid ) % const_HashTableSize;
+
+		//console.printf( "Hash %3u for \"%s\".", hashcellid, TexMan.GetName( texid ) );
+		return hashcellid;
+	}
+
+
+	RandomTexturesReplacerHashNode Add( TextureID texid, double chance ) {
+		if ( cachedLastNode && texid == cachedLastNode.texid )
+			return cachedLastNode;
+
+		return ( cachedLastNode = hashtable[ getHashID( texid ) ].AddNode( texid, chance ) );
+	}
+
+	RandomTexturesReplacerHashNode FindTextureByID( TextureID texid ) {
+		if ( cachedLastNode && texid == cachedLastNode.texid )
+			return cachedLastNode;
+
+		return ( cachedLastNode = hashtable[ getHashID( texid ) ].FindTextureByID( texid ) );
+	}
+
+	RandomTexturesReplacerHashNode FindTextureByName( String texname ) {
+		return FindTextureByID( TexMan.CheckForTexture( texname, texmanTexturesType ) );
+	}
+} // of class RandomTexturesReplacerHashTable {}
+

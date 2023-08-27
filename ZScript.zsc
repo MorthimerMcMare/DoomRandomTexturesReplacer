@@ -1,0 +1,14 @@
+version "3.3.0"
+
+//
+// (c) Morthimer McMare  a.k.a.  JSO_x, 2023
+//
+
+#include "ZScript/RandomTexturesReplacer/ReplacerCore.zsc"
+#include "ZScript/RandomTexturesReplacer/TexturesHashTable.zsc"
+
+#include "ZScript/RandomTexturesReplacer/Replacer_Random.zsc"
+#include "ZScript/RandomTexturesReplacer/Replacer_LevelWide.zsc"
+
+#include "ZScript/RandomTexturesReplacer/Example.zsc"
+

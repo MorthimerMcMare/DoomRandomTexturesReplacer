@@ -1,0 +1,51 @@
+//
+// Replaces rule-fitting textures to other choosen for them on the whole map.
+//
+
+class RandomTexturesReplacerReplaceTable_SelectionOnce: RandomTexturesReplacerReplaceTable {
+	TextureID selectedTexture;
+
+	override void Init( void ) {
+		selectedTexture = const_NullTexture;
+	}
+
+	override TextureID GetReplacingTexture( void ) {
+		if ( selectedTexture == const_NullTexture )
+			selectedTexture = tableRandomTexture();
+
+		return selectedTexture;
+	}
+
+	void ResetSelectedTexture( void ) {
+		selectedTexture = const_NullTexture;
+	}
+}
+
+
+class RandomTexturesReplacerHandler_BaseLevelWide: RandomTexturesReplacerHandler_BaseRandom {
+	// Set the "RandomTexturesReplacerReplaceTable_SelectionOnce" class in
+	//the "AddCategory()" (third argument).
+
+	void ResetTextures( void ) {
+		for ( int j = 0; j < categories.Size(); j++ ) {
+			RandomTexturesReplacerCategory curcategory = categories[ j ];
+
+			for ( int i = 0; i < curcategory.GetDestTableSize(); i++ ) {
+				let destnode = RandomTexturesReplacerReplaceTable_SelectionOnce( curcategory.GetDest( i ) );
+
+				if ( destnode is 'RandomTexturesReplacerReplaceTable_SelectionOnce' )
+					destnode.ResetSelectedTexture();
+			}
+		}
+	} // of void ResetTextures( void ) {}
+
+	protected uint AddLevelWideCategory( int texmanType ) {
+		return AddCategory( texmanType, replaceTableClass: 'RandomTexturesReplacerReplaceTable_SelectionOnce' );
+	}
+
+	override void HandleWorldInit( WorldEvent e ) {
+		ResetTextures();
+		Super.HandleWorldInit( e );
+	}
+
+} // of class RandomTexturesReplacerHandler_BaseLevelWide: RandomTexturesReplacerHandler_BaseRandom {}

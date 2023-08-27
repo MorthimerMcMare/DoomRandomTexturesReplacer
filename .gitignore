@@ -1,0 +1,10 @@
+*.bat
+*.sh
+
+*_launch*.*
+_lastrun*.txt
+_temp*
+_ignore*
+
+_SendDir/
+*.hardlink.*
