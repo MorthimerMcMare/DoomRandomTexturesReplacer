@@ -2,7 +2,7 @@
 
 Flexible textures replacer API written on ZScript (*ZDoom family engines). Internally uses a hash table and simple caching to quickly find a texture, so time complexity is a `O(1)` in the average case and `O(n)` in the worst case.
 
-For the example see file "[Example.zsc](ZScript\RandomTexturesReplacer\Example.zsc)".
+For the example see file "[Example.zsc](ZScript/RandomTexturesReplacer/Example.zsc)".
 
 
 <br>
@@ -10,7 +10,7 @@ For the example see file "[Example.zsc](ZScript\RandomTexturesReplacer\Example.z
 
 ## Class `RandomTexturesReplacerBaseHandler`
 
-Static event handler "`RandomTexturesReplacerBaseHandler`" is an abstract class for all other replacers. Inherits classes `RandomTexturesReplacerHandler_BaseRandom` and `RandomTexturesReplacerHandler_BaseLevelWide`.
+Static event handler "`RandomTexturesReplacerBaseHandler`" is an abstract class for all other replacers. Inherits classes `RandomTexturesReplacerHandler_BaseRandom` (total random according to the rules) and `RandomTexturesReplacerHandler_BaseLevelWide` (handler selects replacer texture for every specified source texture and uses them throughout the level).
 
 There are no API fields for this class: all fields are internal, despite of the `protected` scope.
 
@@ -19,7 +19,7 @@ There are no API fields for this class: all fields are internal, despite of the 
 ```CPP
 virtual void SetupCategories( void )
 ```
-Method for categories initialization. In general its structure will be similar to the next code template:
+Method for categories initialization. Does nothing by default. In general its structure will be similar to the next code template:
 ```CPP
 /* First category: */
 AddCategory();
@@ -42,7 +42,6 @@ ReplaceTo( ... );
 
 // <...>
 ```
-Does nothing by default.
 
 <br>
 
@@ -89,7 +88,7 @@ Return a new category index in the internal dynamic array, starting from 0. With
 ```CPP
 void ResetCategories( void )
 ```
-Clear all of the saved categories and calls a virtual `SetupCategories()` again.
+Clear all of the saved categories and call a virtual `SetupCategories()` again.
 
 <br>
 
@@ -126,7 +125,7 @@ What to do right after internal initialization. Does nothing by default.
 ```CPP
 protected TextureID tableRandomTexture( void )
 ```
-Get a random texture from the list of the saved replacee textures. Time complexity is a `O(n)` in the average and worst cases.
+Get a random texture from the list of the saved replacee textures. Time complexity is `O(n)` in the average and worst cases (no more optimizations necessary because usually in one replace table stored only a small amount of destination textures).
 
 <br>
 
