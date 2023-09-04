@@ -10,7 +10,7 @@ For the example see file "[Example.zsc](ZScript/RandomTexturesReplacer/Example.z
 
 ## Class `RandomTexturesReplacerBaseHandler`
 
-Static event handler "`RandomTexturesReplacerBaseHandler`" is an abstract class for all other replacers. Inherits classes `RandomTexturesReplacerHandler_BaseRandom` (total random according to the rules) and `RandomTexturesReplacerHandler_BaseLevelWide` (handler selects replacer texture for every specified source texture and uses them throughout the level).
+Static event handler `RandomTexturesReplacerBaseHandler` is an abstract class for all other replacers. Inherits classes `RandomTexturesReplacerHandler_BaseRandom` (total random according to the rules) and `RandomTexturesReplacerHandler_BaseLevelWide` (handler selects replacer texture for every specified source texture and uses them throughout the level).
 
 There are no API fields for this class: all fields are internal, despite of the `protected` scope.
 
@@ -107,10 +107,10 @@ Class "`RandomTexturesReplacerReplaceTable`" is for selecting textures.
 ### API fields
 
 ```CPP
-Array<TextureID> textures;		// All replacee textures for this replace group.
-Array<double> chances;			// All chances for the replacee textures. chances.Size() == textures.Size().
-double totalChance;				// Pre-calculated total chance sum.
-TextureID const_NullTexture;	// Texture to return if no replaces must be done.
+Array<TextureID> textures;   // All replacee textures for this replace group.
+Array<double> chances;       // All chances for the replacee textures. chances.Size() == textures.Size().
+double totalChance;          // Pre-calculated total chance sum.
+TextureID const_NullTexture; // Texture to return if no replaces must be done.
 ```
 
 ### API methods
